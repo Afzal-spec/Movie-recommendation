@@ -6,10 +6,13 @@ const axios = require("axios");
 require("dotenv").config();
 
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 
 app.use(express.json());
-app.use(cors());
+
+// Allow requests only from frontend URL in production (change in .env)
+const allowedOrigins = process.env.FRONTEND_URL || "*";
+app.use(cors({ origin: allowedOrigins }));
 
 const pythonScriptPath = path.join(__dirname, "../movies_recommendation.py");
 
@@ -52,7 +55,6 @@ app.post("/recommend", (req, res) => {
         resultData = resultData.trim();
         const responseJson = JSON.parse(resultData);
 
-        // If Python returns an error, send it as a response
         if (responseJson.error) {
           return res.status(404).json({ error: responseJson.error });
         }
@@ -72,6 +74,7 @@ app.post("/recommend", (req, res) => {
 
         return res.json({ recommendations: movieData });
       } catch (error) {
+        console.error("Error parsing Python response:", error);
         return res.status(500).json({ error: "Failed to parse Python response" });
       }
     } else {
@@ -82,5 +85,5 @@ app.post("/recommend", (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
+  console.log(`Server is running on port ${PORT}`);
 });
